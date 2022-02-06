@@ -1,0 +1,17 @@
+[mqtt]
+id = "visonic-rs"
+host = "127.0.0.1"
+port = 1883
+username = "openhab"
+password = "openhab"
+command_topic = "/alarm/neo/cmd"
+status_topic = "/alarm/neo/status"
+
+[visonic]
+hostname  = 'connect.tycomonitor.com'
+user_code = "000"
+app_id   = '000000'
+partition = -1
+user_email = "john@doe.com"
+user_password = "1123123123"
+panel_id = "123123"
