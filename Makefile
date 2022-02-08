@@ -6,4 +6,4 @@ VERSION := $(LATEST_TAG)
 endif
 
 build:
-	DOCKER_BUILDKIT=1 docker build -t fr3akx/visonic-rs:${VERSION} fr3akx/visonic-rs:latest -f Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t fr3akx/visonic-rs:${VERSION} -t fr3akx/visonic-rs:latest -f Dockerfile .
