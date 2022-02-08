@@ -1,41 +1,35 @@
-FROM rust:latest AS builder
+# syntax=docker/dockerfile:1.3
 
-RUN rustup target add x86_64-unknown-linux-musl
-RUN apt update && apt install -y musl-tools musl-dev
-RUN update-ca-certificates
+FROM ekidd/rust-musl-builder:1.57.0 AS builder
 
-# Create appuser
 ENV USER=visonic
 ENV UID=10001
 
-RUN adduser \
+RUN sudo adduser \
     --disabled-password \
-    --gecos "" \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
     "${USER}"
 
-WORKDIR /visonic
+WORKDIR /home/rust/src
 
 COPY ./ .
 
-RUN cargo build --target x86_64-unknown-linux-musl --release
+RUN cargo build --release
+RUN strip ./target/x86_64-unknown-linux-musl/release/visonic
 
 ####################################################################################################
 ## Final image
 ####################################################################################################
 FROM scratch
 
-# Import from builder.
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
 WORKDIR /visonic
 
-# Copy our build
-COPY --from=builder /visonic/target/x86_64-unknown-linux-musl/release/visonic ./
+COPY --from=builder /home/rust/src/target/x86_64-unknown-linux-musl/release/visonic ./
 
-# Use an unprivileged user.
 USER visonic:visonic
 CMD ["/visonic/visonic"]
