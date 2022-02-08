@@ -17,7 +17,7 @@ cargo build --release
 sample config [vs.toml](./vs.toml)
 
 ### Running in Docker
-TBD
+[docker-compose.yml](./docker-compose.yml)
 
 ### Running systemd
 [visonic.service](./visonic.service)
