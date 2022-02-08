@@ -1,0 +1,10 @@
+version: '3.3'
+
+services:
+  visonic-rs:
+    image: fr3akx/visonic-rs:latest
+    container_name: visonic-rs
+    restart: always
+    command: /visonic/visonic -c /visonic.toml
+    volumes:
+      - ./vs.toml:/visonic.toml
