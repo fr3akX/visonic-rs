@@ -1,10 +1,10 @@
-HEAD_COMMIT := $(shell git rev-parse HEAD)
-VERSION := $(shell git tag --contains ${HEAD_COMMIT}|tr -d 'v')
-LATEST_TAG := $(shell git describe --tags --abbrev=0 --always | tr -d 'v')
+HEAD_COMMIT := $(shell git rev-parse --short HEAD)
 ifeq ($(VERSION), )
-VERSION := $(LATEST_TAG)
+VERSION := $(HEAD_COMMIT)-snapshot
 endif
 
+version:
+	@echo $(VERSION)
 build:
 	DOCKER_BUILDKIT=1 docker build -t fr3akx/visonic-rs:${VERSION} -t fr3akx/visonic-rs:latest \
 			--platform linux/armv7 --platform linux/amd64 -f Dockerfile .
