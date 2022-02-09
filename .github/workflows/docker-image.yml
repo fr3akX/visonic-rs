@@ -12,7 +12,22 @@ jobs:
 
     runs-on: ubuntu-latest
 
+
     steps:
+    - name: Log into registry ${{ env.REGISTRY }}
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+      with:
+        registry: ${{ docker.io }}
+        username: ${{ secrets.DOCKER_IO_USER }}
+        password: ${{ secrets.DOCKER_IO_PASS }}
+        
+    - uses: actions/checkout@v2
+    - name: Build & publish the Docker image
+      if: github.event_name == 'push'
+      run: make
+      
     - uses: actions/checkout@v2
     - name: Build the Docker image
+      if: github.event_name == 'pull_request'
       run: make build
