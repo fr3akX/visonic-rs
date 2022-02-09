@@ -28,7 +28,7 @@ jobs:
       if: github.event_name == 'push'
       env:
         VERSION: ${{ steps.meta.outputs.tags }}
-      run: make all
+      run: VERSION=${{ steps.meta.outputs.json }} make all
       
     - uses: actions/checkout@v2
     - name: Build the Docker image
