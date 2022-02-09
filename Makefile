@@ -6,4 +6,15 @@ VERSION := $(LATEST_TAG)
 endif
 
 build:
-	DOCKER_BUILDKIT=1 docker build -t fr3akx/visonic-rs:${VERSION} -t fr3akx/visonic-rs:latest -f Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t fr3akx/visonic-rs:${VERSION} -t fr3akx/visonic-rs:latest \
+			--platform linux/armv7 --platform linux/amd64 -f Dockerfile .
+extract:
+	docker container create --name extract fr3akx/visonic-rs:${VERSION}
+	docker container cp extract:/visonic/visonic ./bin/visonic
+	docker container cp extract:/visonic/visonic-arm ./bin/visonic-arm
+	docker container rm -f extract
+
+publish:
+	docker push fr3akx/visonic-rs
+
+all: build extract publish

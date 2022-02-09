@@ -6,5 +6,7 @@ services:
     container_name: visonic-rs
     restart: always
     command: /visonic/visonic -c /visonic.toml
+# raspberry pi
+#    command: /visonic/visonic-arm -c /visonic.toml
     volumes:
       - ./vs.toml:/visonic.toml

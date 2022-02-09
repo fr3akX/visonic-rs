@@ -35,11 +35,18 @@ mosquitto_pub -t /alarm/neo/cmd -m DISARM
 
 [Rest of the supported commands](./src/main.rs#L88)
 
+## armv7 raspberry
+docker image provided contains both x86_64 and armv7 binaries. For rpi
+override command to
+```
+command: /visonic/visonic-arm
+```
+
 ## License
 [GPL V3](https://www.gnu.org/licenses/gpl-3.0.html)
 
 ## TODO
-* armv7 build
+~~* armv7 build~~
 
 ## Credits
 Communication protocol with tycomonitor.com has been borrowed from https://github.com/And3rsL/VisonicAlarm2
