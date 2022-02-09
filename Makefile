@@ -15,6 +15,7 @@ extract:
 	docker container rm -f extract
 
 publish:
-	docker push fr3akx/visonic-rs
+	docker push fr3akx/visonic-rs:${VERSION}
+	docker push fr3akx/visonic-rs:latest
 
 all: build publish
