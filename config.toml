@@ -10,7 +10,7 @@ status_topic = "/alarm/neo/status"
 [visonic]
 hostname  = 'connect.tycomonitor.com'
 user_code = "000"
-app_id   = '000000'
+app_id   = '000000' # generate UUID unique for you
 partition = -1
 user_email = "john@doe.com"
 user_password = "1123123123"
