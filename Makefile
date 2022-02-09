@@ -17,4 +17,4 @@ extract:
 publish:
 	docker push fr3akx/visonic-rs
 
-all: build extract publish
+all: build publish
