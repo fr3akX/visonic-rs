@@ -1,4 +1,4 @@
-# Visonic-rs, is a MQTT gateway to DSC like security panels
+# Visonic-rs - a MQTT gateway to DSC like security panels
 
 ## Build
 
@@ -37,6 +37,9 @@ mosquitto_pub -t /alarm/neo/cmd -m DISARM
 
 ## License
 [GPL V3](https://www.gnu.org/licenses/gpl-3.0.html)
+
+## TODO
+* armv7 build
 
 ## Credits
 Communication protocol with tycomonitor.com has been borrowed from https://github.com/And3rsL/VisonicAlarm2
