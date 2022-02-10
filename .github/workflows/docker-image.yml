@@ -15,6 +15,7 @@ jobs:
 
 
     steps:
+  
     - name: Log into registry ${{ env.REGISTRY }}
       if: github.event_name != 'pull_request'
       uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
@@ -24,11 +25,16 @@ jobs:
         password: ${{ secrets.DOCKER_IO_PASS }}
         
     - uses: actions/checkout@v2
+    - name: Set output
+      id: vars
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+    - uses: actions/checkout@v2
     - name: Build & publish the Docker image
       if: github.event_name == 'push'
       env:
-        VERSION: ${{ steps.meta.outputs.tags }}
-      run: VERSION=${{ steps.meta.outputs.json }} make all
+        VERSION: ${{ steps.vars.outputs.tag }}
+      run: VERSION=${{ steps.vars.outputs.tag }} make all
       
     - uses: actions/checkout@v2
     - name: Build the Docker image
