@@ -6,6 +6,7 @@ username = "openhab"
 password = "openhab"
 command_topic = "/alarm/neo/cmd"
 status_topic = "/alarm/neo/status"
+lwt_topic = "/alarm/neo/lwt"
 
 [visonic]
 hostname  = 'connect.tycomonitor.com'

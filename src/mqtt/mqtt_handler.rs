@@ -1,11 +1,13 @@
+use log::error;
+use rumqttc::{AsyncClient, ClientError, Event, EventLoop, Incoming, LastWill, MqttOptions, QoS};
+use serde::Deserialize;
 use std::fmt::{Display, Formatter};
 use std::future::Future;
-
-use log::error;
-use rumqttc::{AsyncClient, ClientError, Event, EventLoop, Incoming, MqttOptions, QoS};
-use serde::Deserialize;
 use tokio::task;
 use tokio::task::{JoinError, JoinHandle};
+
+const LWT_OFFLINE: &str = "OFFLINE";
+const LWT_ONLINE: &str = "ONLINE";
 
 #[derive(Clone, Deserialize)]
 pub struct MqttHandlerConfig {
@@ -16,6 +18,8 @@ pub struct MqttHandlerConfig {
     pub password: String,
     pub command_topic: String,
     pub status_topic: String,
+    pub info_topic: String,
+    pub lwt_topic: String,
 }
 
 pub struct MqttAsyncConnection {
@@ -25,7 +29,13 @@ pub struct MqttAsyncConnection {
 }
 
 impl MqttAsyncConnection {
-    pub async fn handle<F, Fut>(&mut self, handler: F)
+    pub async fn publish(&self, topic: String, payload: String) -> Result<(), ClientError> {
+        self.client
+            .publish(topic, QoS::AtLeastOnce, true, payload)
+            .await
+    }
+
+    pub async fn on_message<F, Fut>(&mut self, handler: F)
     where
         F: Fn(Message) -> Fut,
         Fut: Future<Output = Option<String>>,
@@ -77,6 +87,11 @@ impl Display for HandlerError {
         }
     }
 }
+impl From<ClientError> for HandlerError {
+    fn from(err: ClientError) -> Self {
+        Self::Mqtt(err)
+    }
+}
 
 impl MqttHandlerConfig {
     pub async fn connect(&self) -> Result<MqttAsyncConnection, HandlerError> {
@@ -96,7 +111,18 @@ impl MqttHandlerConfig {
 
         let mut mqttoptions = MqttOptions::new(&self.id, &self.host, self.port);
         mqttoptions.set_credentials(&self.username, &self.password);
+        mqttoptions.set_last_will(LastWill::new(
+            &self.lwt_topic,
+            LWT_OFFLINE,
+            QoS::AtLeastOnce,
+            true,
+        ));
+
         let (client, connection) = AsyncClient::new(mqttoptions, 10);
+
+        client
+            .publish(&self.lwt_topic, QoS::AtLeastOnce, true, LWT_ONLINE)
+            .await?;
 
         let conf = self.clone();
         let x: JoinHandle<Result<(AsyncClient, EventLoop), ClientError>> =

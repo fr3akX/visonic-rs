@@ -5,7 +5,7 @@ use log::{error, info, LevelFilter};
 use serde::Deserialize;
 
 use crate::mqtt::mqtt_handler::MqttHandlerConfig;
-use crate::visonic::visonic::{Visonic, VisonicErr};
+use crate::visonic::visonic::{AuthedVisonic, Visonic, VisonicErr};
 
 mod mqtt;
 mod visonic;
@@ -57,8 +57,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let s = visonic.troubles().await.unwrap();
     info!("troubles: {:?}", s);
 
-    let s = visonic.panel_info().await.unwrap();
-    info!("panel_info: {}", s);
+    let panel_info = visonic.panel_info().await.unwrap();
+    info!("panel_info: {}", panel_info);
 
     let s = visonic.wakeup_sms().await.unwrap();
     info!("wakeup_sms: {:?}", s);
@@ -80,49 +80,59 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("Connected to MQTT broker");
 
     connection
-        .handle(|msg| async {
-            let visonic = config.visonic.login().await;
-
-            fn handle(cmd: String, r: Result<(), VisonicErr>) -> Option<String> {
-                return match r {
-                    Ok(_) => Some(cmd),
+        .publish(config.mqtt.info_topic, panel_info)
+        .await
+        .unwrap();
+    connection
+        .on_message(|msg| {
+            let visonic = config.visonic.clone();
+            let command = msg.payload.to_string();
+            async move {
+                match visonic.login().await {
+                    Ok(visonic) => dispatch_command(command, visonic.clone()).await,
                     Err(err) => {
-                        error!("Failure {}: {}", cmd, err);
-                        Some("ERROR".to_string())
-                    }
-                };
-            }
-
-            match visonic {
-                Ok(visonic) => match msg.payload {
-                    s if s.eq("AWAY") => {
-                        let arm = visonic.arm().await;
-                        return handle("AWAY".to_string(), arm);
-                    }
-                    s if s.eq("DISARM") => {
-                        let arm = visonic.disarm().await;
-                        return handle("DISARM".to_string(), arm);
-                    }
-                    s if s.eq("NIGHT") => {
-                        let arm = visonic.arm_night().await;
-                        return handle("NIGHT".to_string(), arm);
-                    }
-                    s if s.eq("STAY") => {
-                        let arm = visonic.arm_stay().await;
-                        return handle("STAY".to_string(), arm);
-                    }
-                    s => {
-                        info!("unknown mqtt command: {}", s.to_string());
+                        error!("Failed to login to visonic {}", err);
                         None
                     }
-                },
-                Err(err) => {
-                    error!("Failed to login to visonic {}", err);
-                    None
                 }
             }
         })
         .await;
 
     Ok(())
+}
+
+fn log_unwrap(cmd: String, r: Result<(), VisonicErr>) -> Option<String> {
+    return match r {
+        Ok(_) => Some(cmd),
+        Err(err) => {
+            error!("Failure {}: {}", cmd, err);
+            Some("ERROR".to_string())
+        }
+    };
+}
+
+async fn dispatch_command(command: String, visonic: AuthedVisonic) -> Option<String> {
+    match command {
+        s if s.eq("AWAY") => {
+            let arm = visonic.arm().await;
+            return log_unwrap("AWAY".to_string(), arm);
+        }
+        s if s.eq("DISARM") => {
+            let arm = visonic.disarm().await;
+            return log_unwrap("DISARM".to_string(), arm);
+        }
+        s if s.eq("NIGHT") => {
+            let arm = visonic.arm_night().await;
+            return log_unwrap("NIGHT".to_string(), arm);
+        }
+        s if s.eq("STAY") => {
+            let arm = visonic.arm_stay().await;
+            return log_unwrap("STAY".to_string(), arm);
+        }
+        s => {
+            info!("unknown mqtt command: {}", s.to_string());
+            None
+        }
+    }
 }

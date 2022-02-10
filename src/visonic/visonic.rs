@@ -19,6 +19,7 @@ pub struct Visonic {
     pub panel_id: String,
 }
 
+#[derive(Clone)]
 pub struct AuthedVisonic {
     pub(crate) visonic: Visonic,
     pub(crate) user_token: String,
