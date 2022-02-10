@@ -7,8 +7,7 @@ use serde::Deserialize;
 use tokio::task;
 use tokio::task::{JoinError, JoinHandle};
 
-#[derive(Clone)]
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct MqttHandlerConfig {
     pub id: String,
     pub host: String,
@@ -27,35 +26,37 @@ pub struct MqttAsyncConnection {
 
 impl MqttAsyncConnection {
     pub async fn handle<F, Fut>(&mut self, handler: F)
-        where F: Fn(Message) -> Fut,
-              Fut: Future<Output = Option<String>> {
+    where
+        F: Fn(Message) -> Fut,
+        Fut: Future<Output = Option<String>>,
+    {
         loop {
-            let event = &self.connection.poll().await.unwrap();//its ok to fail here
-            match event  {
+            let event = &self.connection.poll().await.unwrap(); //its ok to fail here
+            match event {
                 Event::Incoming(Incoming::Publish(p)) => {
-                    let r = std::str::from_utf8(&p.payload)
-                        .map(|s| Message { topic: p.topic.to_string(), payload: s.to_string() });
+                    let r = std::str::from_utf8(&p.payload).map(|s| Message {
+                        topic: p.topic.to_string(),
+                        payload: s.to_string(),
+                    });
 
                     match r {
-                        Ok(msg) => {
-                            match handler(msg).await {
-                                Some(msg) => {
-                                    let pub_result = &self.client
-                                        .publish(&self.config.status_topic, QoS::AtLeastOnce, true, msg)
-                                        .await;
+                        Ok(msg) => match handler(msg).await {
+                            Some(msg) => {
+                                let pub_result = &self
+                                    .client
+                                    .publish(&self.config.status_topic, QoS::AtLeastOnce, true, msg)
+                                    .await;
 
-                                    match pub_result {
-                                        Ok(_) => (),
-                                        Err(err) => error!("Error publishing to mqtt: {}", err)
-                                    }
-                                },
-                                None => ()
+                                match pub_result {
+                                    Ok(_) => (),
+                                    Err(err) => error!("Error publishing to mqtt: {}", err),
+                                }
                             }
-
+                            None => (),
                         },
                         Err(err) => error!("Failed to decode MQTT message: {}", err),
                     }
-                },
+                }
                 _ => async { () }.await,
             }
         }
@@ -72,17 +73,24 @@ impl Display for HandlerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             HandlerError::Mqtt(err) => write!(f, "HandlerError::Mqtt {}", err),
-            HandlerError::System(join) => write!(f, "HandlerError::System {}", join)
+            HandlerError::System(join) => write!(f, "HandlerError::System {}", join),
         }
     }
 }
 
 impl MqttHandlerConfig {
     pub async fn connect(&self) -> Result<MqttAsyncConnection, HandlerError> {
-        async fn do_subscribe(client: AsyncClient, eventloop: EventLoop, config: MqttHandlerConfig) -> Result<(AsyncClient, EventLoop), ClientError> {
-            match client.subscribe(config.command_topic, QoS::ExactlyOnce).await {
+        async fn do_subscribe(
+            client: AsyncClient,
+            eventloop: EventLoop,
+            config: MqttHandlerConfig,
+        ) -> Result<(AsyncClient, EventLoop), ClientError> {
+            match client
+                .subscribe(config.command_topic, QoS::ExactlyOnce)
+                .await
+            {
                 Ok(_) => Ok((client, eventloop)),
-                Err(e) => Err(e)
+                Err(e) => Err(e),
             }
         }
 
@@ -91,18 +99,19 @@ impl MqttHandlerConfig {
         let (client, connection) = AsyncClient::new(mqttoptions, 10);
 
         let conf = self.clone();
-        let x: JoinHandle<Result<(AsyncClient, EventLoop), ClientError>> = task::spawn(async move {
-            do_subscribe(client, connection, conf.clone()).await
-        });
+        let x: JoinHandle<Result<(AsyncClient, EventLoop), ClientError>> =
+            task::spawn(async move { do_subscribe(client, connection, conf.clone()).await });
 
         match x.await {
-            Ok(join) => {
-                match join {
-                    Ok(r) => Ok(MqttAsyncConnection { connection: r.1, client: r.0, config: self.clone() }),
-                    Err(e) => Err(HandlerError::Mqtt(e))
-                }
-            }
-            Err(e) => Err(HandlerError::System(e))
+            Ok(join) => match join {
+                Ok(r) => Ok(MqttAsyncConnection {
+                    connection: r.1,
+                    client: r.0,
+                    config: self.clone(),
+                }),
+                Err(e) => Err(HandlerError::Mqtt(e)),
+            },
+            Err(e) => Err(HandlerError::System(e)),
         }
     }
 }

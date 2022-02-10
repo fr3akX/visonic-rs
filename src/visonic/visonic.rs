@@ -2,14 +2,13 @@ use std::fmt::{Display, Formatter};
 use std::future::Future;
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use tokio::time::Instant;
 
 use crate::visonic::*;
 
-#[derive(Clone)]
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Visonic {
     pub hostname: String,
     pub user_code: String,
@@ -74,13 +73,14 @@ impl From<reqwest::Error> for VisonicErr {
 impl Display for VisonicErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            VisonicErr::VersionNotSupported(vers) => write!(f, "VisonicErr::VersionNotSupported({})", vers),
+            VisonicErr::VersionNotSupported(vers) => {
+                write!(f, "VisonicErr::VersionNotSupported({})", vers)
+            }
             VisonicErr::HttpError(code, s) => write!(f, "VisonicErr::HttpError({}, {})", code, s),
             VisonicErr::RetriesExhausted => write!(f, "VisonicErr::RetriesExhausted"),
         }
     }
 }
-
 
 impl Visonic {
     async fn version(&self) -> Result<RespVersion, VisonicErr> {
@@ -91,12 +91,21 @@ impl Visonic {
     }
 
     pub async fn check_ver(&self) -> Result<(), VisonicErr> {
-        match  self.version().await {
-            Ok(r) => r.rest_versions
+        match self.version().await {
+            Ok(r) => r
+                .rest_versions
                 .iter()
                 .find(|s| s.eq(&&REST_VERSION.to_string()))
-                .map_or_else(|| Err(VisonicErr::VersionNotSupported(format!("{:?}", r.rest_versions))), |_| Ok(())),
-            Err(e) => Err(e)
+                .map_or_else(
+                    || {
+                        Err(VisonicErr::VersionNotSupported(format!(
+                            "{:?}",
+                            r.rest_versions
+                        )))
+                    },
+                    |_| Ok(()),
+                ),
+            Err(e) => Err(e),
         }
     }
 
@@ -183,7 +192,6 @@ pub struct ResProcessStatus {
 }
 
 impl AuthedVisonic {
-
     pub async fn status(&self) -> Result<ResStatus, VisonicErr> {
         self.get_json::<ResStatus>(RES_STATUS).await
     }
@@ -217,14 +225,14 @@ impl AuthedVisonic {
     }
 
     async fn set_status(&self, status: String) -> Result<ResProcessToken, VisonicErr> {
-        let req = ReqSetState { partition: -1, state: status };
+        let req = ReqSetState {
+            partition: -1,
+            state: status,
+        };
         let res = reqwest::Client::new()
             .post(uri(&self.visonic.hostname, RES_SET_STATE))
             .json(&req)
-            .with_user_session_token(
-                self.user_token.to_string(),
-                self.session_token.to_string()
-            )
+            .with_user_session_token(self.user_token.to_string(), self.session_token.to_string())
             .send()
             .await?
             .json()
@@ -232,17 +240,32 @@ impl AuthedVisonic {
 
         Ok(res)
     }
-    pub async fn process_status(&self, token: ResProcessToken) -> Result<Vec<ResProcessStatus>, VisonicErr> {
-        let res = self.execute_while(|| self.process_status_once(token.clone()), |result| {
-            result.iter().find(|item| {
-                item.status.eq("succeeded")
-            } ).is_some()
-        }, 5);
+    pub async fn process_status(
+        &self,
+        token: ResProcessToken,
+    ) -> Result<Vec<ResProcessStatus>, VisonicErr> {
+        let res = self.execute_while(
+            || self.process_status_once(token.clone()),
+            |result| {
+                result
+                    .iter()
+                    .find(|item| item.status.eq("succeeded"))
+                    .is_some()
+            },
+            5,
+        );
 
         res.await
     }
-    async fn process_status_once(&self, token: ResProcessToken) -> Result<Vec<ResProcessStatus>, VisonicErr> {
-        let url = format!("{}?process_tokens={}", uri(&self.visonic.hostname, RES_PROCESS_STATUS), token.process_token);
+    async fn process_status_once(
+        &self,
+        token: ResProcessToken,
+    ) -> Result<Vec<ResProcessStatus>, VisonicErr> {
+        let url = format!(
+            "{}?process_tokens={}",
+            uri(&self.visonic.hostname, RES_PROCESS_STATUS),
+            token.process_token
+        );
 
         let res: Vec<ResProcessStatus> = reqwest::Client::new()
             .get(url)
@@ -254,20 +277,26 @@ impl AuthedVisonic {
 
         Ok(res)
     }
-    async fn execute_while<F, R: Clone, Fut, P>(&self, f: F, predicate: P, limit: u8) -> Result<R, VisonicErr>
-        where F: Fn() -> Fut,
-              Fut: Future<Output = Result<R, VisonicErr>>,
-              P: Fn(&R) -> bool {
-
+    async fn execute_while<F, R: Clone, Fut, P>(
+        &self,
+        f: F,
+        predicate: P,
+        limit: u8,
+    ) -> Result<R, VisonicErr>
+    where
+        F: Fn() -> Fut,
+        Fut: Future<Output = Result<R, VisonicErr>>,
+        P: Fn(&R) -> bool,
+    {
         let sleep = tokio::time::sleep(Duration::from_secs(1));
         tokio::pin!(sleep);
 
         for _ in 1..limit {
             let r = f().await;
             match r {
-                Ok(r) if(predicate(&r)) => return Ok(r.clone()),
+                Ok(r) if (predicate(&r)) => return Ok(r.clone()),
                 Ok(_) => (),
-                Err(_) => ()
+                Err(_) => (),
             }
 
             tokio::select! {
@@ -340,5 +369,4 @@ impl AuthedVisonic {
 
         Ok(res)
     }
-
 }

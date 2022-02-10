@@ -4,20 +4,20 @@ pub(crate) const APP_TYPE: &str = "com.visonic.PowerMaxApp";
 // const UA: &str = "Visonic%20GO/2.8.62.91 CFNetwork/901.1 Darwin/17.6.0";
 pub(crate) const REST_VERSION: &str = "9.0";
 
-pub(crate)  const RES_PANEL_LOGIN: &str = "/panel/login";
-pub(crate)  const RES_AUTH: &str = "/auth";
-pub(crate)  const RES_STATUS: &str = "/status";
-pub(crate)  const RES_VERSIONS: &str = "/version";
-pub(crate)  const RES_SET_STATE: &str = "/set_state";
-pub(crate)  const RES_PROCESS_STATUS: &str = "/process_status";
-pub(crate)  const RES_EVENTS: &str = "/events";
-pub(crate)  const RES_ALARMS: &str = "/alarms";
-pub(crate)  const RES_ALERTS: &str = "/alerts";
-pub(crate)  const RES_TROUBLES: &str = "/troubles";
-pub(crate)  const RES_PANEL_INFO: &str = "/panel_info";
-pub(crate)  const RES_WAKEUP_SMS: &str = "/wakeup_sms";
-pub(crate)  const RES_DEVICES: &str = "/devices";
-pub(crate)  const RES_LOCATIONS: &str = "/locations";
+pub(crate) const RES_PANEL_LOGIN: &str = "/panel/login";
+pub(crate) const RES_AUTH: &str = "/auth";
+pub(crate) const RES_STATUS: &str = "/status";
+pub(crate) const RES_VERSIONS: &str = "/version";
+pub(crate) const RES_SET_STATE: &str = "/set_state";
+pub(crate) const RES_PROCESS_STATUS: &str = "/process_status";
+pub(crate) const RES_EVENTS: &str = "/events";
+pub(crate) const RES_ALARMS: &str = "/alarms";
+pub(crate) const RES_ALERTS: &str = "/alerts";
+pub(crate) const RES_TROUBLES: &str = "/troubles";
+pub(crate) const RES_PANEL_INFO: &str = "/panel_info";
+pub(crate) const RES_WAKEUP_SMS: &str = "/wakeup_sms";
+pub(crate) const RES_DEVICES: &str = "/devices";
+pub(crate) const RES_LOCATIONS: &str = "/locations";
 
 pub(crate) fn uri(hostname: &String, endpoint: &str) -> String {
     format!("https://{}/rest_api/{}{}", hostname, REST_VERSION, endpoint)
