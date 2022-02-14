@@ -163,7 +163,7 @@ impl Visonic {
 #[derive(Deserialize, Debug)]
 pub struct Partition {
     pub id: u16,
-    pub state: String,
+    pub state: State,
     pub status: String,
     pub ready: bool,
 }
@@ -177,7 +177,7 @@ pub struct ResStatus {
 #[derive(Serialize)]
 struct ReqSetState {
     partition: i16,
-    state: String,
+    state: State,
 }
 
 #[derive(Deserialize, Clone)]
@@ -192,6 +192,14 @@ pub struct ResProcessStatus {
     pub error: Option<String>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum State {
+    AWAY,
+    DISARM,
+    STAY,
+    NIGHT,
+}
+
 impl AuthedVisonic {
     pub async fn status(&self) -> Result<ResStatus, VisonicErr> {
         self.get_json::<ResStatus>(RES_STATUS).await
@@ -202,33 +210,33 @@ impl AuthedVisonic {
     }
 
     pub async fn arm(&self) -> Result<(), VisonicErr> {
-        let res = self.set_status("AWAY".to_string()).await?;
-        let _ = self.process_status(res).await?;
+        let res = self.set_state(State::AWAY).await?;
+        let _ = self.process_set_state(res).await?;
         Ok(())
     }
 
     pub async fn disarm(&self) -> Result<(), VisonicErr> {
-        let res = self.set_status("DISARM".to_string()).await?;
-        let _ = self.process_status(res).await?;
+        let res = self.set_state(State::DISARM).await?;
+        let _ = self.process_set_state(res).await?;
         Ok(())
     }
 
     pub async fn arm_night(&self) -> Result<(), VisonicErr> {
-        let res = self.set_status("NIGHT".to_string()).await?;
-        let _ = self.process_status(res).await?;
+        let res = self.set_state(State::NIGHT).await?;
+        let _ = self.process_set_state(res).await?;
         Ok(())
     }
 
     pub async fn arm_stay(&self) -> Result<(), VisonicErr> {
-        let res = self.set_status("STAY".to_string()).await?;
-        let _ = self.process_status(res).await?;
+        let res = self.set_state(State::STAY).await?;
+        let _ = self.process_set_state(res).await?;
         Ok(())
     }
 
-    async fn set_status(&self, status: String) -> Result<ResProcessToken, VisonicErr> {
+    async fn set_state(&self, state: State) -> Result<ResProcessToken, VisonicErr> {
         let req = ReqSetState {
             partition: -1,
-            state: status,
+            state,
         };
         let res = reqwest::Client::new()
             .post(uri(&self.visonic.hostname, RES_SET_STATE))
@@ -241,7 +249,7 @@ impl AuthedVisonic {
 
         Ok(res)
     }
-    pub async fn process_status(
+    async fn process_set_state(
         &self,
         token: ResProcessToken,
     ) -> Result<Vec<ResProcessStatus>, VisonicErr> {

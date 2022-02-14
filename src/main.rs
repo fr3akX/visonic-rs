@@ -42,11 +42,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let visonic = config.visonic.login().await.unwrap();
 
-    let s = visonic.status().await.unwrap();
-    info!("STATUS: {}", s.connected);
-
     let s = visonic.status_txt().await.unwrap();
     info!("STATUS: {}", s);
+
+    let s = visonic.status().await.unwrap();
+    info!("STATUS: {}", s.connected);
 
     let s = visonic.alarms().await.unwrap();
     info!("alarms: {:?}", s);
