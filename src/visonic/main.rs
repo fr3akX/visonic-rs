@@ -2,7 +2,7 @@ use reqwest::RequestBuilder;
 
 pub(crate) const APP_TYPE: &str = "com.visonic.PowerMaxApp";
 // const UA: &str = "Visonic%20GO/2.8.62.91 CFNetwork/901.1 Darwin/17.6.0";
-pub(crate) const REST_VERSION: &str = "9.0";
+pub(crate) const REST_VERSION: &str = "10.0";
 
 pub(crate) const RES_PANEL_LOGIN: &str = "/panel/login";
 pub(crate) const RES_AUTH: &str = "/auth";
